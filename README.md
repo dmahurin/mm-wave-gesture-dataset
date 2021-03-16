@@ -1,0 +1,1 @@
+This is the open source data set for the paper "Multidimensional Feature Representation and Learning for Robust Hand-Gesture Recognition on Commercial Millimeter-Wave Radar", which has been accepted by IEEE TGRS.
