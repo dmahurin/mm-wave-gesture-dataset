@@ -35,8 +35,8 @@ for feat_chose = 1 : 10
         case 10
             feature = 'DT_RT_HAT_VAT_4Channel';
     end
-    load(['CNN\',feature,'_CNN_Net'])
-    data_path = ['dataset\',test_object,'testset\',feature,'\'];
+    load(['CNN/',feature,'_CNN_Net'])
+    data_path = ['dataset/',test_object,'testset/',feature,'/'];
 %% Label generation
 N_class = 8;
 data_sum = 0;
@@ -60,7 +60,7 @@ for class_choose = 0 : 7
         case 7
             class_str = 'forefinger-thumb open-close';       
     end
-    dataFilefolder = [data_path,class_str,'\'];
+    dataFilefolder = [data_path,class_str,'/'];
     if feat_chose == 10
         dataCount = length(dir([dataFilefolder,'*.mat'])); 
     else
@@ -92,7 +92,7 @@ for class_choose = 0 : 7
             class_str = 'forefinger-thumb open-close';  
     end
 
-    dataFilefolder = [data_path,class_str,'\'];
+    dataFilefolder = [data_path,class_str,'/'];
     if feat_chose == 10
         img_all = dir([dataFilefolder,'*.mat']);
     else
