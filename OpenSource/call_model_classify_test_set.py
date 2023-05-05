@@ -36,7 +36,7 @@ for user in [1,2]:
                 feature = 'DT_RT_HAT_VAT_4Channel'
 
         scipy.io.loadmat(np.array(['CNN/',feature,'_CNN_Net']))
-        data_path = np.array(['dataset/',test_object,'testset/',feature,'/'])
+        data_path = 'dataset/' + test_object + 'testset/' + feature + '/'
         ## Label generation
         N_class = 8
         data_sum = 0
@@ -59,12 +59,12 @@ for user in [1,2]:
                     class_str = 'finger circle'
                 case 7:
                     class_str = 'forefinger-thumb open-close'
-            dataFilefolder = np.array([data_path,class_str,'/'])
+            dataFilefolder = data_path + class_str + '/'
             if feat_chose == 10:
-                dataCount = len(dir(np.array([dataFilefolder,'*.mat'])))
+                dataCount = len([ file for file in os.listdir(dataFilefolder) if file.endswith('.mat')])
             else:
-                dataCount = len(dir(np.array([dataFilefolder,'*.png'])))
-            data_nums[class_choose + 1] = dataCount
+                dataCount = len([ file for file in os.listdir(dataFilefolder) if file.endswith('.png')])
+            data_nums[class_choose] = dataCount
             data_sum = data_sum + dataCount
         realLabel_str = cell(data_sum,1)
         predLabel_str = cell(data_sum,1)
@@ -87,26 +87,27 @@ for user in [1,2]:
                     class_str = 'finger circle'
                 case 7:
                     class_str = 'forefinger-thumb open-close'
-            dataFilefolder = np.array([data_path,class_str,'/'])
+            dataFilefolder = data_path + class_str + '/'
             if feat_chose == 10:
-                img_all = dir(np.array([dataFilefolder,'*.mat']))
+                img_all = [ file for file in os.listdir(dataFilefolder) if file.endswith('.mat')]
             else:
-                img_all = dir(np.array([dataFilefolder,'*.png']))
-            img_names = np.array([img_all.name])
+                img_all = [ file for file in os.listdir(dataFilefolder) if file.endswith('.png')]
+            img_names = img_all
             dataCount = len(img_all)
-            for img_ind in np.arange(1,dataCount+1).reshape(-1):
-                img_name = np.array([dataFilefolder,img_names[img_ind]])
+            for img_ind in np.arange(0,dataCount):
+                img_name = dataFilefolder + img_names[img_ind]
                 if feat_chose != 10:
-                    image_classify = imread(img_name)
+                    image_classify = imageio.imread(img_name)
                 else:
-                    image_classify = importdata(img_name)
-                label,scores = classify(GR_CNN_Net,image_classify)
-                class_pred = char(label)
+                    image_classify =  scipy.io.loadmat(img_name)
+                label,scores = classify(net_path,image_classify)
+
                 if class_choose == 0:
                     realLabel_str[img_ind] = class_str
                     predLabel_str[img_ind] = class_pred
+
                 else:
-                    count1 = sum(data_nums(np.arange(1,class_choose+1)))
+                    count1 = sum(data_nums[0:class_choose])
                     realLabel_str[count1 + img_ind] = class_str
                     predLabel_str[count1 + img_ind] = class_pred
         realLabel_str = categorical(realLabel_str)
