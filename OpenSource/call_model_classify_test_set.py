@@ -1,6 +1,51 @@
 import numpy as np
 import os
 import matplotlib.pyplot as plt
+import scipy.io
+import imageio.v3 as imageio
+import onnxruntime
+#from sklearn.metrics import confusion_matrix
+
+class_strings = np.array(['non-gesture','palm up','palm down','palm left','palm right','finger double-click','finger circle','forefinger-thumb open-close'])
+
+def classify(net_session, img):
+    img = np.array(img).astype(np.float32)
+
+    if len(img.shape) > 2:
+        img = np.transpose(img, (2, 0, 1))
+        img = np.expand_dims(img, axis=0)
+    else:
+        img = np.expand_dims(np.expand_dims(img, axis=0), axis=1)
+
+    predictions = net_session.run(None, {net_session.get_inputs()[0].name: img})[0]
+    predicted_label = np.argmax(predictions)
+
+    return predicted_label, predictions
+
+def plotconfusion(actual, predicted, class_strings, title):
+    nclasses = len(class_strings)
+    actual = np.array(actual)
+    predicted = np.array(predicted)
+    # cm = confusion_matrix(actual, predicted)
+    cm = np.bincount(nclasses *  predicted + actual, minlength=nclasses ** 2).reshape(nclasses, nclasses)
+
+    plt.title(title + ' Confusion Matrix')
+    plt.imshow(cm, interpolation='nearest', cmap=plt.cm.Blues)
+    plt.colorbar()
+
+    cm = np.transpose(cm)
+    plt.ylabel('Actual Class')
+    plt.xlabel('Predicted Class')
+    plt.xticks(np.arange(nclasses), class_strings, rotation=-45, ha='left')
+    plt.yticks(np.arange(nclasses), class_strings)
+
+    thresh = cm.max() / 2.
+    for i in range(cm.shape[0]):
+        for j in range(cm.shape[1]):
+            plt.text(j, i, format(cm[i, j], 'd'),
+                     horizontalalignment="center",
+                     color="white" if cm[i, j] > thresh else "black")
+
 ##
 for user in [1,2]:
     match user:
@@ -35,7 +80,7 @@ for user in [1,2]:
             case 10:
                 feature = 'DT_RT_HAT_VAT_4Channel'
 
-        scipy.io.loadmat(np.array(['CNN/',feature,'_CNN_Net']))
+        net_session = onnxruntime.InferenceSession('CNN/' + feature + '_CNN_Net' + '.onnx')
         data_path = 'dataset/' + test_object + 'testset/' + feature + '/'
         ## Label generation
         N_class = 8
@@ -59,6 +104,7 @@ for user in [1,2]:
                     class_str = 'finger circle'
                 case 7:
                     class_str = 'forefinger-thumb open-close'
+
             dataFilefolder = data_path + class_str + '/'
             if feat_chose == 10:
                 dataCount = len([ file for file in os.listdir(dataFilefolder) if file.endswith('.mat')])
@@ -66,8 +112,8 @@ for user in [1,2]:
                 dataCount = len([ file for file in os.listdir(dataFilefolder) if file.endswith('.png')])
             data_nums[class_choose] = dataCount
             data_sum = data_sum + dataCount
-        realLabel_str = cell(data_sum,1)
-        predLabel_str = cell(data_sum,1)
+        realLabel = [None] * data_sum
+        predLabel = [None] * data_sum
         ## Classification testset
         for class_choose in np.arange(0,8):
             match class_choose:
@@ -100,21 +146,22 @@ for user in [1,2]:
                     image_classify = imageio.imread(img_name)
                 else:
                     image_classify =  scipy.io.loadmat(img_name)
-                label,scores = classify(net_path,image_classify)
+                    image_classify =  image_classify['img_3channels']
+                label,scores = classify(net_session,image_classify)
 
+                class_from_model_index = np.argsort(class_strings, axis=0)
                 if class_choose == 0:
-                    realLabel_str[img_ind] = class_str
-                    predLabel_str[img_ind] = class_pred
+                    realLabel[img_ind] = class_choose
+                    predLabel[img_ind] = class_from_model_index[label]
 
                 else:
                     count1 = sum(data_nums[0:class_choose])
-                    realLabel_str[count1 + img_ind] = class_str
-                    predLabel_str[count1 + img_ind] = class_pred
-        realLabel_str = categorical(realLabel_str)
-        predLabel_str = categorical(predLabel_str)
+                    realLabel[int(count1 + img_ind)] = class_choose
+                    predLabel[int(count1 + img_ind)] = class_from_model_index[label]
+
         ## Plot confusion matrix
-        plt.figure(1000)
         feature_str = feature.replace('_','-')
-        plotconfusion(realLabel_str,predLabel_str,np.array([test_object,'testset ',feature_str,' feature ']))
-        saveas(gcf,np.array([result_save_path,'Test user ',test_object,' ',feature_str,' classification result.tif']))
+        plotconfusion(realLabel, predLabel, class_strings, test_object + 'testset ' + feature_str + ' feature ')
+        plt.pause(3)
+        plt.clf()
 
